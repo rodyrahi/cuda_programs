@@ -72,9 +72,9 @@ int main(){
 
     // COPY KERNEL TO CONSTANT MEMORY
     float h_kernel[9] = {
-        1.0f/7, 1.0f/9, 1.0f/5,
-        1.0f/2, 1.0f/8, 1.0f/10,
-        1.0f/9, 1.0f/9, 1.0f/6
+        1.0f/9, 1.0f/9, 1.0f/9,
+        1.0f/9, 1.0f/9, 1.0f/9,
+        1.0f/9, 1.0f/9, 1.0f/9
     };
     CUDA_CHECK(cudaMemcpyToSymbol(kernal, h_kernel, sizeof(h_kernel)));
 
@@ -95,12 +95,6 @@ int main(){
 
     cv::imshow("CUDA Output", outImg);
     cv::waitKey(0);
-
-    if (!cv::imwrite("E:/cuda_programs/output.jpg", outImg)) {
-        printf("Failed to save image\n");
-    } else {
-        printf("Saved output.jpg\n");
-    }
 
     cudaFree(d_input);
     cudaFree(d_output);
