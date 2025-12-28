@@ -113,3 +113,12 @@ int main(){
 // opencv_imgcodecs4.dll
 // opencv_highgui4.dll
 // opencv_videoio4.dll
+
+
+
+
+// nvcc image_process.cu ^
+//  -IC:\opencv\build\include ^
+//  -Xcudafe --diag_suppress=611 ^
+//  C:\opencv\build\x64\vc16\lib\opencv_world4120.lib ^
+//  -o image_process.exe
