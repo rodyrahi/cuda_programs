@@ -1,36 +1,24 @@
 #include <stdio.h>
 #include <cuda_runtime.h>
 
+__global__ void predict(
+    float *x,       // (M × F) input matrix
+    float *w,       // (F) trained weights
+    float *b,       // scalar bias
+    float *y_out,   // (M) output predictions
+    int m,          // number of samples
+    int f           // number of features
+) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-// __global__ void compute_gradient(float *x , float *y , float *dw , float*db , float *w , float*b , int n){
-
-//     int i = blockIdx.x * blockDim.x + threadIdx.x;
-
-//     if (i<n)
-//     {
-//         // formula:
-//         // y=wx+b
-//         // dw=∑(ypred​−y)⋅x
-//         // db=∑(ypred​−y)
-//         // ---------------
-
-//         // y=wx+b
-//         float y_pred = (*w)*x[i] + (*b) ;
-//         // dw=∑(<<<<< | ypred​−y | >>>>>)⋅x
-//         float loss =  y_pred - y[i] ;
-        
-//         // dw=∑(ypred​−y)⋅x
-//         atomicAdd(dw , loss*x[i]);
-        
-//         // db=∑(ypred​−y)
-//         atomicAdd(db , loss);
-
-//     }
-    
-
-// }
-
-
+    if (i < m) {
+        float y = *b;
+        for (int j = 0; j < f; j++) {
+            y += w[j] * x[i * f + j];
+        }
+        y_out[i] = y;
+    }
+}
 
 
 
@@ -90,18 +78,6 @@ __global__ void update_params(float *w , float *b , float *dw , float*db , float
 }
 
 
-// __global__ void update_params(float *w , float *b , float *dw , float*db , float lr , int n){
-//     if (threadIdx.x == 0)
-//     {
-//         *w -= lr * (*dw / n);
-//         *b -= lr * (*db / n);
-//         *dw = 0.0f;
-//         *db = 0.0f;
-//     }
-    
-
-// }
-
 int main(){
     const int N = 5;
     const int F = 4;
@@ -156,6 +132,40 @@ int main(){
     }
     
     printf("Trained Model: y = %.3f + %.3fx1 + %.3fx2 + %.3fx3 + %.3fx4\n", b, w[0], w[1], w[2], w[3]);
+
+
+    const int M = 3;  
+
+    float new_x[M * F] = {
+        6, 7, 8, 9,
+        7, 8, 9, 10,
+        8, 9, 10, 11
+    };
+
+    float *d_x_new, *d_y_pred;
+    float y_pred[M];
+
+    cudaMalloc(&d_x_new, M * F * sizeof(float));
+    cudaMalloc(&d_y_pred, M * sizeof(float));
+
+    cudaMemcpy(d_x_new, new_x, M * F * sizeof(float), cudaMemcpyHostToDevice);
+
+    int threads = 256;
+    int blocks = (M + threads - 1) / threads;
+
+    predict<<<blocks, threads>>>(d_x_new, d_w, d_b, d_y_pred, M, F);
+    cudaDeviceSynchronize();
+
+
+    cudaMemcpy(y_pred, d_y_pred, M * sizeof(float), cudaMemcpyDeviceToHost);
+    printf("\nPredictions on new data:\n");
+    for (int i = 0; i < M; i++) {
+        printf("Sample %d -> y_pred = %.3f\n", i, y_pred[i]);
+    }
+
+
+    cudaFree(d_x_new);
+    cudaFree(d_y_pred);
 
 
 
